@@ -1,3 +1,5 @@
+# Call By Value & Call By Reference
+
 두 방법 모두 함수 호출시 함수를 위한 별도의 임시공간이 생기며,
 
 함수가 종료되면 해당 공간은 사라짐
