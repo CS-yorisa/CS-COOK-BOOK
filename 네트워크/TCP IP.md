@@ -74,7 +74,7 @@
   > CSMA/CD, MAC, LAN, X25, 패킷망, 위성 통신, 다이얼 모뎀 등 **전송에 사용**  
   > 프로토콜 : Ethernet(이더넷), Token Ring, PPP
 
-![image-20211226174832452](TCP IP.assets/image-20211226174832452.png)
+![image-20211226174832452](https://user-images.githubusercontent.com/87461594/147405560-a771e9c3-ba0c-4b30-86d6-822ba8224262.png)
 
 <br>
 
@@ -88,7 +88,7 @@
 > 신뢰성 보장과 **흐름 제어, 혼잡 제어**에 관여할 수 있는 요소들은 **TCP Header**에 담겨 있음  
 > TCP 사용 예시 : 웹 HTTP 통신, 이메일, 파일 전송 등
 
-![image-20211226181500923](TCP IP.assets/image-20211226181500923.png)
+![image-20211226181500923](https://user-images.githubusercontent.com/87461594/147405564-4703cada-e8a7-4caf-8ca5-a4ba7a8e22f6.png)
 
 <br>
 
