@@ -1,6 +1,6 @@
 ## DBMS(Database Management System)
 다수의 사용자들이 DB내의 데이터를 접근할 수 있도록 해주는 소프트웨어 도구의 집합
-DB 형태에 따라 RDMBS, NoSQL DBMS, IMDBMS(인 메모리 DBMS), CDBMS(기둥형 DBMS)
+DB 형태에 따라 RDBMS, NoSQL DBMS, IMDBMS(인 메모리 DBMS), CDBMS(기둥형 DBMS)
 
 #### 파일 시스템
 - 데이터를 파일로 관리할 수 있도록 파일을 생성, 삭제, 수정, 검색 기능 제공
@@ -9,14 +9,14 @@ DB 형태에 따라 RDMBS, NoSQL DBMS, IMDBMS(인 메모리 DBMS), CDBMS(기둥�
     - 같은 내용의 데이터가 여러 파일에 중복 저장됨
     - 응용 프로그램이 데이터 파일에 종속적
     - 데이터 파일에 대한 동시 공유, 보안, 회복 기능 부족
-    - 응요 프로그램 개발 쉽지 않음
+    - 응용 프로그램 개발 쉽지 않음
 - 파일시스템의 단점을 해결하기 위해 DBMS를 사용
 
 #### 기능
 - 정의 : 데이터에 대한 형식, 구조, 제약조건 명세
 - 구축 : DBMS가 관리하는 기억 장치에 데이터 저장
 - 조작 : 특정 데이터를 검색하기 위한 질의 DB 갱신, 보고서 생성 기능
-- 공유 : 여러 사용자와 프로그램이 DBㄹ에 동시에 접근하도록 하는 기능
+- 공유 : 여러 사용자와 프로그램이 DB에 동시에 접근하도록 하는 기능
 - 보호 : HW, SW 오동작 또는 권한이 없는 악의적 접근으로부터 서비스 보호
 - 유지보수 : 시간이 지남에 따라 변경하는 요구사항 반영
 
@@ -52,7 +52,7 @@ DB 형태에 따라 RDMBS, NoSQL DBMS, IMDBMS(인 메모리 DBMS), CDBMS(기둥�
 
 5. NoSQL
 
-- 비정형 데이터를 저리하기 위해 저장
+- 비정형 데이터를 처리하기 위해 저장
 - 대량 데이터를 처리하는 웹 서비스에 적합
 
 6. NewSQL
@@ -72,7 +72,7 @@ DB 형태에 따라 RDMBS, NoSQL DBMS, IMDBMS(인 메모리 DBMS), CDBMS(기둥�
         - MongoDB, CouthDB
     - Wide Column DB : 키에서 필드를 결정, 키는 키값 Row와 Column-family, Coulmn-name을 가짐
         - HBase, Hypertable, Cassandra
-    - Graph DB : 데이터를 Node, Edge, Property와 함께 그래프 구조를ㅈ 사용하여 표현 및 저장, 소셜 네트워크에서 친구 찾거나, 패턴 인식 등에 적합
+    - Graph DB : 데이터를 Node, Edge, Property와 함께 그래프 구조를 사용하여 표현 및 저장, 소셜 네트워크에서 친구 찾거나, 패턴 인식 등에 적합
         - Neo4J
 
 ## ORM(Object Relational Mapping)
