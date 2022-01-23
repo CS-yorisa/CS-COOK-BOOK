@@ -53,7 +53,7 @@
 
 #### Payload
 - 토큰 정보를 표현하기 위해 이미 정해진 종류의 데이터
-- Payload에 속하는 속성은 Clain Set이라고 부름
+- Payload에 속하는 속성은 Claient Set이라고 부름
 - 간결한 JWT를 위해 key는 3자로 사용하고 다음과 같은 키가 있음
     - iss(issuer) : 토큰 발급자
     - sub(subject) : 토큰 제목, unique한 값을 사용
@@ -68,7 +68,7 @@
 
 ## Django
 - drf에서 TokenAuthenticaion이 존재하여 토큰 기반 인증을 할 수 있지만, 만료시간이 없고 인증을 위해 DB에 접근해야 함
-- DRF Simpole JWT는 대칭키를 활용하여 JWT 사용
+- DRF Simple JWT는 대칭키를 활용하여 JWT 사용
     - 대칭키 : 키 하나로 복호화 암호화 진행
     - 비대칭키 : 복호화와 암호화에 서로 다른 키를 활용
     - 결과적으로 암호화하는 시크릿 키의 보안이 중요
