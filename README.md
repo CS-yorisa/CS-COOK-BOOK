@@ -2,7 +2,7 @@
 ## 개발
 - [개발방법론](개발/개발방법론.md)
 - [CI/CD](개발/CI-CD.md)
-- [Call By Value & Call By Reference](개발/Call By Value & Call By Reference.md)
+- [Call By Value & Call By Reference](개발/Call%20By%20Value%20&%20Call%20By%20Reference.md)
 
 ## 네트워크
 
@@ -35,7 +35,5 @@
 ## 기술
 
 - [WebRTC](기술/WebRTC.md)
-
 - [쿠버네티스](기술/쿠버네티스.md)
-
 - [클라우드](기술/클라우드.md)
