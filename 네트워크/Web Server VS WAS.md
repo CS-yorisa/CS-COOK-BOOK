@@ -61,7 +61,7 @@
     - fail back : 작동이 중지됐을 때 다시 재작동시킴.
   - 대용량 웹 어플리케이션의 경우 (여러 개의 서버 사용) Web server와 WAS를 분리하여 무중단 운영을 위한 장애 극복에 쉽게 대응할 수 있다.
 - 여러 웹 애플리케이션 서비스 가능
-  - 하나의 서버에서 PHP Application과 Java Application을 함꼐 사용하는 경우 
+  - 하나의 서버에서 PHP Application과 Java Application을 함께사용하는 경우 
 
 - Web Server를 WAS 앞에 두고 필요한 WAS들을 Web Server에 플러그인 형태로 설정하면 더욱 효율적인 분산 처리가 가능하다.
 
@@ -70,3 +70,4 @@
 > Django는 서버-사이드 웹 프레임워크, 서버를 제공하지 않음. runserver는 테스트용
 >
 > gunicorn 으로 WAS 서버를 띄우고, 웹 서버로는 Nginx
+
