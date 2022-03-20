@@ -20,6 +20,7 @@
 - [운영체제](운영체제/운영체제.md)
 - [프로세스, 스레드](운영체제/프로세스,%20스레드.md)
 - [스케줄러 (Scheduler)](운영체제/스케줄러%20(Scheduler).md)
+- [CPU 스케줄링 (CPU Scheduling)](운영체제/CPU%20스케줄링%20(CPU%20Scheduling).md)
 
 ## DB
 - [DB란 무엇인가](DB/DB란%20무엇인가.md)
