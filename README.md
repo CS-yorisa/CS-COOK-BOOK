@@ -15,6 +15,7 @@
 - [RESTful API](네트워크/RESTful%20API.md)
 - [Socket 통신](네트워크/Socket%20통신.md)
 - [Web Server VS WAS](네트워크/Web%20Server%20VS%20WAS.md)
+- [웹 캐시](네트워크/웹%20캐시.md)
 
 ## 운영체제
 - [운영체제](운영체제/운영체제.md)
