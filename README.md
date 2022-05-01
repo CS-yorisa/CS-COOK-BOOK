@@ -41,11 +41,10 @@
 
 # 면접 질문
 ## 개발
-
 - [Vanilla JS, React.js, Vue.js 를 사용한 이유](개발/Vanilla%20JS,%20React.js,%20Vue.js%20를%20사용한%20이유.md)
+- [Python,C,Java](개발/Python,C,Java.md)
 
 ## 네트워크
-
 - [인증 방식](네트워크/인증%20방식.md)
 
 ## 자료구조
