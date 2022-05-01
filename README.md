@@ -40,6 +40,10 @@
 ---
 
 # 면접 질문
+## 개발
+- [Vanilla JS, React.js, Vue.js 를 사용한 이유](개발/Vanilla%20JS,%20React.js,%20Vue.js%20를%20사용한%20이유.md)
+- [Python,C,Java](개발/Python,C,Java.md)
+
 ## 네트워크
 - [인증 방식](네트워크/인증%20방식.md)
 - [URL을 입력했을 때 발생하는 일들](네트워크/URL을%20입력했을%20때%20발생하는%20일들.md)
