@@ -43,8 +43,8 @@
 	- 멀티캐스트 : 1-그룹 통신, 하나의 출발지에서 다수의 지정된 목적지
 
 ## 프로토콜 변환
-- 2계층까지 헤더 정보를 벗겨내고, 3계츨 주소 확인
-- 2계츨 헤더 정보를 새로 입혀 외부로 내보냄
+- 2계층까지 헤더 정보를 벗겨내고, 3계층 주소 확인
+- 2계층 헤더 정보를 새로 입혀 외부로 내보냄
 - LAN, WAN에서 사용하는 프로토콜이 다른데, 이를 연결해주는데 사용
 
 # 5. ARP를 통해 IP주소를 MAC주소로 변환
@@ -74,4 +74,3 @@
 - [브라우저에 map.google.com을 입력하면 어떤 일이 벌어지나요?](https://velog.io/@khy226/%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%EC%97%90-url%EC%9D%84-%EC%9E%85%EB%A0%A5%ED%95%98%EB%A9%B4-%EC%96%B4%EB%96%A4%EC%9D%BC%EC%9D%B4-%EB%B2%8C%EC%96%B4%EC%A7%88%EA%B9%8C)
 - [라우터 동작 방식](https://haeunyah.tistory.com/98)
 - [ARP & MAC address](https://aws-hyoh.tistory.com/entry/ARP-%EC%89%BD%EA%B2%8C-%EC%9D%B4%ED%95%B4%ED%95%98%EA%B8%B0)
-- 
