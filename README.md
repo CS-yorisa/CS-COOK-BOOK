@@ -3,7 +3,6 @@
 - [개발방법론](개발/개발방법론.md)
 - [CI/CD](개발/CI-CD.md)
 - [Call By Value & Call By Reference](개발/Call%20By%20Value%20&%20Call%20By%20Reference.md)
-- [형상관리툴(CSV, SVN, GIT)](개발/형상관리 툴 (CVS, SVN, GIT).md)
 
 ## 네트워크
 - [HTTP](네트워크/HTTP.md) / [HTTPS](네트워크/HTTPS.md)
@@ -43,12 +42,14 @@
 # 면접 질문
 ## 개발
 - [Vanilla JS, React.js, Vue.js 를 사용한 이유](개발/Vanilla%20JS,%20React.js,%20Vue.js%20를%20사용한%20이유.md)
-- [Python,C,Java](개발/Python,C,Java.md)
+- [Python, C, Java](개발/Python,C,Java.md)
+- [형상관리 툴(CSV, SVN, GIT)](개발/형상관리%20툴%20(CVS,%20SVN,%20GIT).md)
 
 ## 네트워크
 - [인증 방식](네트워크/인증%20방식.md)
 - [URL을 입력했을 때 발생하는 일들](네트워크/URL을%20입력했을%20때%20발생하는%20일들.md)
 - [IP의 종류](네트워크/IP의%20종류.md)
+- [브라우저 저장소 (웹 스토리지, 쿠키)](네트워크/브라우저%20저장소%20(웹%20스토리지,%20쿠키).md)
 
 ## 자료구조
 - [레드블랙 트리](자료구조/레드%20블랙%20트리.md)
