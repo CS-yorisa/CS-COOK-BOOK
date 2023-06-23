@@ -69,3 +69,4 @@
     - [디자인 패턴에 뛰어들기](books/디자인%20패턴에%20뛰어들기/README.md)
     - [헤드 퍼스트 디자인 패턴](books/헤드%20퍼스트%20디자인%20패턴/README.md)
     - [자바스크립트로 배우는 SCIP](books/%EC%9E%90%EB%B0%94%EC%8A%A4%ED%81%AC%EB%A6%BD%ED%8A%B8%EB%A1%9C%20%EB%B0%B0%EC%9A%B0%EB%8A%94%20SICP/README.md)
+    - [쏙쏙 들어오는 함수형 코딩](books/쏙쏙%20들어오는%20함수형%20코딩/README.md)
