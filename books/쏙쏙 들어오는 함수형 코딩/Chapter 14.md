@@ -226,7 +226,7 @@ function incrementSize(itme) {
 ```js
 function updateX(object, depth, key1, key2, key3, modify) {
     return update(obejct, key1, function(value) {
-        return updateX(object, depth - 1, key2, k3, modify)
+        return updateX-1(object, depth - 1, key2, key3, modify)
     }) 
 }
 ```
@@ -252,7 +252,7 @@ function updateX(object, keys, modify) {
 - 깊이을 인자를 주어 판단하는 대신, 배열의 길이를 활용하도록 변경
 - 그리고 위와 같은 함수를 `nestedUpdate()`와 같은 이름을 활용하여 일반적으로 활용할 수 있도록 변경
 
-## 안전한 재귀 사용번
+## 안전한 재귀 사용법
 
 - 종료 조건
     - 재귀를 먼추기 위해서는 종료조건이 필요함
