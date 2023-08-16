@@ -131,7 +131,7 @@ function remove_item_by_name(cart, name) {
 - 키/값 쌍 지우기 `delete`
 - 객체 복사하기 `Object.assign(a, b)`
   - b 객체의 모든 키 값을 a 객체로 복사 `Object.assign({}, object)`
-- 키 목록 가져오기 `Object,keys()`
+- 키 목록 가져오기 `Object.keys()`
 
 
 
@@ -143,7 +143,7 @@ function remove_item_by_name(cart, name) {
 var mailing_list = [];
 
 function add_contact(email){
-  mailing_list.push(eamail);
+  mailing_list.push(email);
 }
 
 function submit_form_handler(event) {
@@ -311,7 +311,7 @@ function add_contact(mailing_list, email){
 ``` js
 function arraySet(array, idx, value){
   var copy = array.slice();
-  copy[idx] = valuel
+  copy[idx] = value;
   return copy;
 }
 ```
