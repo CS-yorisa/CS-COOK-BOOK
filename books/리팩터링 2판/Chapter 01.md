@@ -158,21 +158,21 @@ function (invoice, plays) {
 function amountFor(perf, play) {
     let thisAmount = 0
     switch (play.type) {
-    case "tragedy":
-        thisAmount = 40000;
-        if (perf.audience > 30) {
-            thisAmount += 1000 * (perf.audience - 30);
-        }
-        break;
-    case "comedy":
-        thisAmount = 30000;
-        if (perf.audience > 20) {
-            thisAmount += 10000 + 500 * (perf.audience - 20);
-        }
-        thisAmount += 300 * perf.audience;
-        break;
-    default:
-        throw new Error(`알 수 없는 장르: ${play.type}`);
+        case "tragedy":
+            thisAmount = 40000;
+            if (perf.audience > 30) {
+                thisAmount += 1000 * (perf.audience - 30);
+            }
+            break;
+        case "comedy":
+            thisAmount = 30000;
+            if (perf.audience > 20) {
+                thisAmount += 10000 + 500 * (perf.audience - 20);
+            }
+            thisAmount += 300 * perf.audience;
+            break;
+        default:
+            throw new Error(`알 수 없는 장르: ${play.type}`);
     }
     return thisAmount
 }
@@ -258,21 +258,21 @@ function playFor(aPerformance) {
 function amountFor(aPerformance) { // ← 3. 변수 인라인으로 매개변수 제거
     let result = 0
     switch (playFor(aPerformance).type) {
-    case "tragedy":
-        result = 40000;
-        if (aPerformance.audience > 30) {
-            result += 1000 * (aPerformance.audience - 30);
-        }
-        break;
-    case "comedy":
-        result = 30000;
-        if (aPerformance.audience > 20) {
-            result += 10000 + 500 * (aPerformance.audience - 20);
-        }
-        result += 300 * perf.audience;
-        break;
-    default:
-        throw new Error(`알 수 없는 장르: ${playFor(aPerformance).type}`);
+        case "tragedy":
+            result = 40000;
+            if (aPerformance.audience > 30) {
+                result += 1000 * (aPerformance.audience - 30);
+            }
+            break;
+        case "comedy":
+            result = 30000;
+            if (aPerformance.audience > 20) {
+                result += 10000 + 500 * (aPerformance.audience - 20);
+            }
+            result += 300 * perf.audience;
+            break;
+        default:
+            throw new Error(`알 수 없는 장르: ${playFor(aPerformance).type}`);
     }
     return result
 }
@@ -660,14 +660,13 @@ function statement(invoice, plays) {
     statementData.performances = invoice.performances.map(enrichPerformance) // ← 공연 데이터
     statementData.totalAmount = totalAmount(statementData)
     statementData.totalVolumeCredits = totalVolumeCredits(statementData)
-
     return renderPlainText(statementData)
 
     function enrichPerformace(aPerformance) { // renderPlainText에 있던 함수들을 statement 함수로 옮김
         const result = Object.assign({}, aPerformance) // 얕은 복사
         result.play = playFor(result) // 중간 데이터 연극 정보 저장
         result.amount = amountFor(result)
-        result.volumeCredits = columeCreditsFor(result)
+        result.volumeCredits = volumeCreditsFor(result)
         return result
     }
 
@@ -734,7 +733,7 @@ function renderPlainText(data) {
     for (let perf of data.performances) {
         result += `${perf.play.name}: ${usd(perf.amount)} (${perf.audience} 석)\n`;
     }
-    result += `총액: ${usd(totalAmount)}\n`;
+    result += `총액: ${usd(data.totalAmount)}\n`;
     result += `적립 포인트: ${data.totalVolumeCredits} 점\n`;
     return result;
 
@@ -1009,7 +1008,7 @@ export default function createStatementData(invoice, plyas) {
     - 계산 로직을 다형성으로 표현
 - 리팩터링은 대부분 코드가 하는 일을 파악하는데서 시작
 - 이 책은 코드를 개선하는 방법을 다룸
-    - 프로그래머 사이에서 좋은 코드에 대한 의견은 붑ㄴ분한데, 저자는 “적절한 이름의 작은 함수들”로 만드는 방석을 선호
+    - 프로그래머 사이에서 좋은 코드에 대한 의견은 분분한데, 저자는 “적절한 이름의 작은 함수들”로 만드는 방식을 선호
     - 또한 취향을 넘어 “수정하기 쉬운 정도”가 좋은 코드를 가능하는 방법이라 생각
 - 1장의 예시를 통해 볼 수 있는 점은, 리팩터링하는 리듬
     - 문서에는 생각했지만, 각 과정에서 리팩터링-컴파일-테스트-커밋의 과정을 명시하고 있었음
