@@ -637,3 +637,627 @@ function inNewEngland(stateCode){
 }
 ```
 
+## 6.6 변수 캡슐화하기
+
+```js
+// before
+let defaultOwner = {firstName: "마틴", lastName: "파울러"}
+
+// after
+let defaultOwnerData = {firstName: "마틴", lastName: "파울러"}
+export function defaultOwener() {return defaultOwnerData}
+export function setDefaultOwner(arg) {defaultOwnerData = arg}
+```
+
+### 배경
+
+- 리팩터링은 프로그램의 요소를 조작하는 일
+    - 함수는 데이터보다 다루기 쉬움
+    - 데이터는 함수보다 다루기 까다로움, 데이터가 참조하는 모든 부분을 변경해야됨
+- 데이터를 옮길 때 먼저 데이터로의 접근을 독점하는 함수를 만드는 방식이 가장 좋을 수 있음
+- 데이터 캡슐화는 데이터를 변경하고 사용하는 코드를 감시할 통로를 만들 수 있음
+- 데이터의 유효범위가 넓을수록 캡슐화 해야 됨
+- 객체 지향에서 객체의 데이터를 항상 private로 유지해야 한다는 이유
+    - 저자는 public 필드를 발견할 때마다 캡슐화해서 가시 범위를 제한
+    - 일뷰는 클래스 안에서 필드를 참조할 때조차 반드시 접근자를 통하게 하려 하는 자가 캡슐화를 주장하지만, 조금 지나친 것 같은 느낌도 있음
+- 불변데이터는 캡슐화할 이유가 적음
+
+### 절차
+
+1. 변수로의 접근과 갱신을 전담하는 캡슐화 함수 만들기
+2. 정적 검사 수행
+3. 변수를 직접 참조하던 부분을 모두 적절한 캡슐화 함수 호출로 변경
+4. 변수 접근 범위 제한
+5. 테스트
+6. 변수 값이 레코드라면, 레코드 캡슐화하기(7.1)를 적용할지 고민
+
+### 예시
+
+```js
+let defaultOwner = {firstName: "마틴", lasetName: "파울러"}
+spaceship.owner = defaultOwner
+defaultOwner = {firstName: "레베카", lasetName: "파슨스"}
+```
+
+- 전경변수에 중요한 데이터가 담겨있는 코드
+    - 그 데이터를 참조 및 갱신하는 코드가 있음
+
+```js
+function getDefaultOwner() {return defaultOwner}
+function setDefualtOwner(arg) {defaultOwner = arg}
+```
+
+- 캡슐화를 위해 데이터를 읽고 쓰는 함수 정의
+
+```js
+spaceship.owner = getDefaultOwner()
+setDefaultOwner({firstName: "레베카", lasetName: "파슨스"})
+```
+
+- defaultOwner를 참조하는 코드를 찾아서 방금 만든 게터 함수 호출하도록, 대입문은 세터 함수를 호출하도록 변경
+
+```js
+let defaultOwnerData = {firstName: "마틴", lastName: "파울러"}
+export function defaultOwener() {return defaultOwnerData}
+export function setDefaultOwner(arg) {defaultOwnerData = arg}
+```
+
+- 변수의 가시 범위 제한, 필요한 함수의 경우만 노출(export)
+- 변수로의 접근 제한을 한다면 이름을 바꾸는 경우도 좋음 (ex. `__privateOnly_defaultOwner`)
+- 저자는 게터 이름에 get을 붙이는 것을 선호하지 않아 제거함
+
+#### 값 캡슐화하기
+
+- 위의 예시에서 데이터 구조로의 참조를 캡슐화하면, 접근이나 다시 대입하는 행위는 제어할 수 있지만, 필드를 변경하는 일은 제어할 수 없음
+
+```js
+let defaultOwnerData = {firstName: "마틴", lastName: "파울러"}
+export function defaultOwener() {
+    return Object.assing({}, defaultOwnerData)
+}
+export function setDefaultOwner(arg) {defaultOwnerData = arg}
+
+class Person {
+    constructor(data) {
+        this._lastName = data.lastName
+        this._firstName = data.firstName
+    }
+    get lastName() {return this._lastName}
+    get firstName() {return this._firstName}
+}
+```
+
+- 가장 간단한 방법은 값을 변경하지 못하도록 하는 것
+    - 게터가 데이터의 복제본을 반환하는 방식으로 구성할 수 있음
+    - 리스트에 이 기법을 많이 사용함
+    - 데이터를 변경하기를 원하는 클라이언트가 있을 수 있음 → 레코드 캡슐화하기(7.1)
+
+- 위의 예시에서는 게터에서의 데이터 복제를 구현,
+    - 세터에서도 데이터 복제를 활용하는게 좋을 수 있음
+- 데이터 복제본을 만드는 방식은 깊이가 1인 구조까지만 효과기 있고, 더 깊이 글어가면 래핑 단계가 더 늘어날 수 있음
+- 캡슐화는 간단하지만, 과정은 간단하지 않음
+- 데이터의 사용 범위가 넓을수록 적절히 캡슐화 하는 것이 좋음
+
+## 6.7 변수 이름 바꾸기
+
+```js
+// before
+let a = height * width
+// after
+let area = height * width
+```
+
+### 배경
+
+- 명확한 프로그래밍읜 핵심은 이름 짓기
+- 이름의 중요성은 사용 범위에 영향을 많이 받음
+    - 한 줄 짜리 람다식, 함수의 매개변수는 짧게 지어도 좋음
+    - 한 번 호출로 끝나지 않는 함수나 영속되는 필드라면 신경을 써야됨
+
+### 절차
+
+1. 폭넓게 쓰이는 변수라면 캡슐화하기(6.6)를 고려
+2. 이름을 바꿀 변수를 참조하는 곳을 모두 찾아서 하나씩 변경
+3. 테스트
+
+### 예시
+
+- 가장 간단한 예시는 임시 변수나 인수처럼 유효한 범위가 하나로 국한된 변수
+- 하지만, 함수 밖에서도 참조할 수 있는 변수면 조심해야됨
+
+```js
+let tpHd = "untitled"
+result += `<h1>${tpHd}</h1>`
+tpHd = obj["articleTitle"]
+
+// 캡슐화하기
+setTitle(obj["articleTitle"])
+
+function title() {return tpHd}
+function setTitle(arg) {tpHd = arg}
+```
+
+- 어떤 값을 참조, 수정하는 경우, 캡슐화할 수 있음
+
+```js
+let _title = "untitled"
+function title() {return _title}
+function setTitle(arg) {_title = arg}
+```
+
+- 래퍼 함수들을 인라인해서 모든 호출자가 변수에 직접 접근하게 하는 방법도 있지만
+    - 저자가 선호하는 방식은 아님
+    - 널리 사용되는 변수라면 함수안에서 캡슐화된 채로 두는 편이 좋다고 생각
+
+#### 예시: 상수 이름 바꾸기
+
+```js
+// before
+const cpyNm = "애크미 구스베리"
+// after
+const companyName = "애크미 구스베리"
+const cpyNm = companyName
+```
+
+- 상수의 이름은 캡슐화하지 않고도 복제 방식으로 점진적으로 바꿀 수 있음
+
+## 6.8 매개변수 객체 만들기
+
+```js
+//before
+function amountInvoiced(startDate, endDate) {...}
+function amountReveibed(startDate, endDate) {...}
+function amountOverdue(startDate, endDate) {...}
+//after
+function amountInvoiced(aDateRange) {...}
+function amountReveibed(aDateRange) {...}
+function amountOverdue(aDateRange) {...}
+```
+
+### 배경
+
+- 데이터 항목 여러 개가 이 함수에서 저 함수로 함께 몰려다니는 경우
+    - 데이터 무리를 데이터 구조 하나로 모으는 작업
+    - 데이터를 데이터 구조로 묶으면 데이터 사이 관계가 명확해지는 이점이 있음
+    - 데이터 구조를 받게 하면 매개변수 수가 줄어듬
+- 이 리팩터링의 진정함 힘은 코드를 더 근본적으로 바꿔줌
+    - 데이터 구조를 활용하는 형태로 프로그램 동작을 재구성
+    - 데이터에 공통으로 적용되는 동작을 추출해서 함수로 만듬
+    - 새로 만든 데이터 구조가 문제 영역을 훨씬 간결하게 표현하는 추상 개념으로 격상, 코드의 개념적인 그림을 다시 그릴 수 있음
+
+### 절차
+
+1. 적당한 데이터 구조가 아직 마련되어 있지 않다면 새로 만듬
+2. 테스트
+3. 함수 선언 바꾸기(6.5)로 새 데이터 구조를 매개변수로 추가
+4. 테스트
+5. 함수 호출 시 새로운 데이터 구조 인스턴스를 넘기도록 수정 (+테스트)
+6. 기존 매개변수를 사용하던 코드를 새 데이터 구조의 원소를 사용하도록 바꿈
+7. 다 꿨다면 기존 매개변수 제거, 테스트
+
+### 예시
+
+```js
+const station = {
+    name: "zB1",
+    readings: [
+        {temp: 47, time: "2015-11-10 09:10"},
+        {temp: 53, time: "2015-11-10 09:20"},
+        {temp: 58, time: "2015-11-10 09:30"},
+        {temp: 53, time: "2015-11-10 09:40"},
+        {temp: 51, time: "2015-11-10 09:50"},
+    ]
+}
+
+function readingOutsideRange(station, min, max) {
+    return station.readings.filter(
+        r => r.temp < min || r.temp > max
+    )
+}
+
+alerts = readingsOutsideRange(
+    station,
+    operatingPlan.temperatureFloor, // 최저 온도
+    opertaingPlan.temperatureCeiling // 최고 온도
+)
+```
+
+- 온도 측정값을 기록한 데이터와 정상 범위를 벗어나는지 검사하는 함수
+    - 검사하는 함수는 또 다른 함수에서 호출 및 활용될 수 있음
+    - 호출 코드에서 데이터 항목 두 개 쌍을 가져와서 전달하는데, 이를 하나로 묶을 수 있음
+
+```js
+class NumberRange {
+    constructor(min, max) {
+        this.data = {min:min, max:max}
+    }
+    get min() {return this._data.min}
+    get max() {return this._data.max}
+}
+```
+
+- 묶은 데이터를 나타낼 클래스 선언
+
+```js
+function readingsOutsideRange(station, min, max, range) {
+    return station.readings.filter(
+        r => r.temp < min || r.temp > max
+    )
+}
+
+alerts = readingsOutsideRange(
+    station,
+    operatingPlan.temperatureFloor,
+    opertaingPlan.temperatureCeiling,
+    null
+)
+```
+
+- 새로 만든 객체를 매개변수에 추가하고, 아직은 호출문에 넣을 값이 없기 때문에 `null`을 입력
+
+```js
+const range = new NumberRange(
+    operatingPlan.temperatureFloor,
+    opertaingPlan.temperatureCeiling
+)
+alerts = readingsOutsideRange(
+    station,
+    operatingPlan.temperatureFloor,
+    opertaingPlan.temperatureCeiling,
+    range
+)
+```
+
+- 온도 범위를 객체 형태로 만들고, 그 객체를 전달
+
+```js
+function readingsOutsideRange(station, range) {
+    return station.readings.filter(
+        r => r.temp < range.min || r.temp > range.max
+    )
+}
+alerts = readingsOutsideRange(station, range)
+```
+
+- 매개변수를 직접 사용하도록 수정
+
+#### 진정한 값 객체로 거듭나기
+
+- 데이터 구조를 만들게 되면, 관련된 동작을 클래스의 메서드로 옮길 수 있는 이점이 생김
+    - 온도 범위를 검사하는 메서드를 클래스에 추가할 수 있음
+
+## 6.9 여러 함수를 클래스로 묶기
+
+```js
+// before
+function base(aReading) {...}
+function texableCharge(aRedaing) {...}
+function calculateBaseCharge(aReading) {...}
+// after
+class Reading {
+    base() {...}
+    texableCharge() {...}
+    calculateBaseCharge() {...}
+}
+```
+
+### 배경
+
+- 클래스는 대다수의 최신 프로그래밍언어가 제공하는 기본적인 빌딩 블록
+    - 클래스는 데이터와 함수를 하나의 공유 환경으로 묶은 후 다른 프로그램 요소와 어우러질 수 있도록 그중 일부를 외부에 제공
+- 공통 데이터를 중심으로 묶게 되면
+    - 함수들이 공유하는 공통 환경을 더 명확히 표현할 수 있고
+    - 함수에 전달되는 인수를 줄여서 객체 안에서의 함수 호출을 간결하게 만들 수 있음
+- 함수를 묶는 다른 방법으로, 여러 함수를 변환 함수로 묶기(6.10)
+- 클래스로 묶을 때의 두드러진 장점은 객체의 핵심 데이터를 변경할 수 있고, 파생 객체들을 일관되게 관리할 수 있음
+- 중첩 함수로도 구현가능하지만, 클래스 구조가 외부에 공개할 때 더 유용할 수 있음
+- 클래스를 지원하지 않는 언어에서는 “함수를 객체처럼”을 이용할 수 있음
+
+### 절차
+
+1. 함수들이 공유하는 공통 데이터 레코드를 캡슐화(7.1)
+2. 공통 레코드를 사용하는 함수 각각을 새 클래스로 옮기기(8.1)
+3. 데이터를 조작하는 로직을 함수로 추출(6.1)
+
+### 예시
+
+```js
+reading = {customer: "ivan", quantity: 10, month: 5, year: 10}
+```
+
+- 계량기를 읽어 측정값을 기록
+
+```js
+// 클라이언트 1
+const aReading = acquireReading()
+const baseCharge = baseRate(aReading.month, aRedagin.year) * aReading.quantity
+
+// 클라이언트 2
+const aReading = acquireReading()
+const base = (baseRate(aReading.month, aRedagin.year) * aReading.quantity)
+const texableCharge = Math.max(0, base - taxThreshold(aReading.year))
+
+// 클라이언트 3
+const aReading = acquireReading()
+const baseChargeAmount = calculateBaseCharge(aReading)
+
+function calculateBaseCharge(aReading) {
+    return baseRate(aReading.month, aReading.year)
+}
+```
+
+- 기본요금을 계산하는 코드
+- 부과할 세금을 계산하는 코드
+- 기본 요금을 계산하는 코드
+
+```js
+class Reading {
+    constructor(data) {
+        this._customer = data.customer
+        this._quantity = data.quantity
+        this._month = data.month
+        this._year = data.year
+    }
+    get customer() {return this._customer}
+    get quantity() {return this._quantity}
+    get month() {return this._month}
+    get year() {return this._year}
+
+    get calculateBaseCharge() {
+        return this.baseRate(this.month, this.year) * this.quantity
+    }
+    get baseCharge () {
+        return baseRate(this.month, this.year) * this.quantity
+    }
+    get texableCharge() {
+        return Math.max(0, this.baseCharge - taxThreshold(this.year))
+    }
+}
+```
+
+- 동일한 데이터를 사용하는 함수들이 있어, 데이터를 클래스로 만듬
+    - 레코드를 캡슐화 하기(7.1)
+- 이후 해당 데이터를 사용하는 함수들을 메서드로 추출
+
+## 6.10 여러 함수를 변환 함수로 묶기
+
+```js
+// before
+function base(aReading) {...}
+function taxableCharge(aReading) {...}
+
+//after
+function enrichReading(argReading) {
+    const aReading = _.cloneDeep(argReading)
+    aReading.baseCharge = base(aReading)
+    aReading.taxableCharge = taxableCharge(aReading)
+    return aRedaing
+}
+```
+
+### 배경
+
+- 소프트웨어는 데이터를 입력을 받아 여러 가지 정보를 도출
+    - 도출된 정보는 여러 곳에서 사용될 수 있음
+    - 정보가 사용되는 곳마다 같은 도출 로직이 반복되기도 함
+    - 이러한 도출 작업을 한 곳으로 모아두는 것이 더 좋을 수 있음
+- 이 리팩터링 대신 여러 함수를 클래스로 묶기(6.9)로 처리해도 됨
+    - 원본 데이터가 코드 안에서 갱신될 때는 클래스로 묶는 편이 나음
+- 함수를 한 데로 묶는 것은
+    - 도출 로직의 중복을 피하기 위함
+    - 함수로 추출(6.1)만으로도 같은 효과를 낼 수 있지만, 이 경우 함수가 근처에 있지 않으면 발견하기 어려울 때가 많음
+
+### 절차
+
+1. 변환할 레코드를 입력받아서 값을 그대로 반환하는 변환 함수 만듬
+2. 묶을 함수 중 함수 하나를 골라서 본문 코드를 변환 함수로 옮기고,
+   처리 결과를 레코드에 새 필드에 기록,
+   클라이언트 코드가 이 필드를 사용하도록 수정
+3. 테스트
+4. 나머지 관련 함수도 위의 방식으로 처리
+
+### 예시
+
+```js
+reading = {customer: "ivan", quantity: 10, month: 5, year: 10}
+```
+
+- 사용자가 계량기에서 사용할 양을 측정
+
+```js
+// 클라이언트 1
+const aReading = acquireReading()
+const baseCharge = baseRate(aReading.month, aRedagin.year) * aReading.quantity
+
+// 클라이언트 2
+const aReading = acquireReading()
+const base = (baseRate(aReading.month, aRedagin.year) * aReading.quantity)
+const texableCharge = Math.max(0, base - taxThreshold(aReading.year))
+
+// 클라이언트 3
+const aReading = acquireReading()
+const baseChargeAmount = calculateBaseCharge(aReading)
+
+function calculateBaseCharge(aReading) {
+    return baseRate(aReading.month, aReading.year)
+}
+```
+
+- 사용자의 요금을 계산할 코드
+- 세금을 부과할 소비량을 계산하는 코드
+- 기본 요금을 계산하는 코드
+- 같은 연산이 다양한 곳에서 이루어진다고 할 때, 해당 기능을 한 곳으로 모아 둘 수 있음
+
+```js
+function enrichReading(argReading) {
+    const aReading = _.cloneDeep(argReading)
+    aReading.baseCharge = base(aReading)
+    aReading.taxableCharge = taxableCharge(aReading)
+    return aRedaing
+}
+```
+
+- 하나의 함수를 만들어 관련한 계산을 한 곳에서 처리하고 반환할 수 있도록 함
+- 이후, 이 함수를 사용하여 클라리언트에서도 사용하도록 수정
+
+## 6.11 단계 쪼개기
+
+```js
+//before
+const orerData = orderString.split(/\s+/)
+const productPrice = priceList[orderData[0].split("-")[1]]
+const orderPrice = parseInt(orderData[1]) * productPrice
+//after
+const orderRecord =parseOrder(order)
+const orderPrice = price(orderRecord, priceList)
+
+function parseOrder(string) {
+    const values = aString.split(/\s+/)
+    return ({
+        productID: values[0].splie("-")[1],
+        quantity: parseInt(values[1])
+    })
+}
+function price(order, priceList) {
+    return order.quantity * priceList[order.productID]
+}
+```
+
+### 배경
+
+- 서로 다른 두 대상을 한꺼번에 다루는 코드를 발견하면, 각각을 별개의 모듈로 나누는 방법을 모색
+    - 코드를 수정할 때 두 대상을 동시에 생각할 필요 없이 하나에만 집중하기 위함
+- 가장 간단한 방법은 연이은 두 단계로 쪼개는 것
+    - 적합하지 않은 형태로 들어오게 되면, 입력 값을 다루기 편한 평태로 가공, 이후 로직 실행
+    - 가장 대표적인 예시는 컴파일러
+        - 어떤 텍스트를 받아 실행 가능한 형태로 변환
+        - 컴파일러 역사가 오래되어, 여러 단계가 순차적으로 연결된 형태로 분리하면 좋다느 사실을 깨달음
+
+### 절차
+
+1. 두 번째 단계에 해당하는 코드를 독립 함수로 추출
+2. 테스트
+3. 중간 데이터 구조를 만들어 앞에서 추출한 함수의 인수로 추가
+4. 테스트
+5. 추출한 두 번째 단계 함수의 매개변수를 하나씩 검토
+6. 첫 번째 단계 코드를 함수로 추출(6.1), 중간 데이터 구조를 반환하도록 만듬
+
+### 예시
+
+```js
+function priceOrder(product, quantity, shippingMethod) {
+    const basePrice = product.basePrice * quantity
+    const discount = Math.max(quantity - product.discountThreshold, 0) * product.basePrice * product.discountRate
+    const shippingPerCase = 
+        (basePrice > shippingMethod.discountThreshold)
+         ? shippingMethod.discountedFee
+         : shippingMethod.freePerCase
+    const shippingCost = quantity * shippingPerCase
+    const price = basePrice - discount + shippingCost
+    return price
+}
+```
+
+- 상품 결제 금액을 계산하는 코드
+    - 앞의 몇 줄은 상품 정보를 이용해서 결제 금액 중 상품 가격 계산
+    - 뒤의 코드는 배송 정보를 이용하여 결제 금액 중 배소비 계산
+
+```js
+function priceOrder(product, quantity, shippingMethod) {
+    const basePrice = product.basePrice * quantity
+    const discount = Math.max(quantity - product.discountThreshold, 0) * product.basePrice * product.discountRate
+    const price = applyShipping(basePrice, shippingMethod, quantity, discount)
+    return price
+}
+
+function applyShipping(basePrice, shippingMethod, quantity, discount) {
+    const shippingPerCase = 
+        (basePrice > shippingMethod.discountThreshold)
+         ? shippingMethod.discountedFee
+         : shippingMethod.freePerCase
+    const shippingCost = quantity * shippingPerCase
+    const price = basePrice - discount + shippingCost
+    return price
+}
+```
+
+- 뒷부분의 배송비 계산 부분을 함수로 추출, 원래 함수에서 인자로 전달
+
+```js
+function priceOrder(product, quantity, shippingMethod) {
+    const basePrice = product.basePrice * quantity
+    const discount = Math.max(quantity - product.discountThreshold, 0) * product.basePrice * product.discountRate
+    const priceData = {} // 중간 데이터 구조
+    const price = applyShipping(basePrice, shippingMethod, quantity, discount)
+    return price
+}
+
+function applyShipping(basePrice, shippingMethod, quantity, discount) {
+    const shippingPerCase = 
+        (basePrice > shippingMethod.discountThreshold)
+         ? shippingMethod.discountedFee
+         : shippingMethod.freePerCase
+    const shippingCost = quantity * shippingPerCase
+    const price = basePrice - discount + shippingCost
+    return price
+}
+```
+
+- 첫 번째 단계와 두 번째 단계가 주고받을 중간 데이터 구조 생성
+
+```js
+function priceOrder(product, quantity, shippingMethod) {
+    const basePrice = product.basePrice * quantity
+    const discount = Math.max(quantity - product.discountThreshold, 0) * product.basePrice * product.discountRate
+    const priceData = {
+        basePrice: basePrice,
+        quantity: quantity,
+        discount: discount
+    }
+    const price = applyShipping(priceData, shippingMethod)
+    return price
+}
+
+function applyShipping(priceData, shippingMethod) {
+    const shippingPerCase = 
+        (priceData.basePrice > shippingMethod.discountThreshold)
+         ? shippingMethod.discountedFee
+         : shippingMethod.freePerCase
+    const shippingCost = priceData.quantity * shippingPerCase
+    const price = priceData.basePrice - priceData.discount + shippingCost
+    return price
+}
+```
+
+- 중간 데이터 구조로 추출
+
+```js
+function priceOrder(product, quantity, shippingMethod) {
+    const priceData = calculatePricingData(product, quantity)
+    const price = applyShipping(priceData, shippingMethod)
+    return price
+}
+
+function calculatePricingData(product, quantity) {
+    const basePrice = product.basePrice * quantity
+    const discount = Math.max(quantity - product.discountThreshold, 0) * product.basePrice * product.discountRate
+    return priceData = {
+        basePrice: basePrice,
+        quantity: quantity,
+        discount: discount
+    }
+}
+
+function applyShipping(priceData, shippingMethod) {
+    const shippingPerCase = 
+        (priceData.basePrice > shippingMethod.discountThreshold)
+         ? shippingMethod.discountedFee
+         : shippingMethod.freePerCase
+    const shippingCost = priceData.quantity * shippingPerCase
+    const price = priceData.basePrice - priceData.discount + shippingCost
+    return price
+}
+```
+
+- 앞부분 계산을 추출하여, 중간 데이터 구조를 반환하도록 변경
+    - 추가로 마지막줄 계산 후 반환하는 대신, 바로 반환하도록 변경할 수 있음
