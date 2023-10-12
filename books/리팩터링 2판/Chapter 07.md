@@ -809,15 +809,336 @@ class TelephoneNumber {
 
 ## 7.6 클래스 인라인하기
 
-<br>
+```js
+class Person{
+  get officeAreaCode() {return this.telephoneNumber.areaCode;}
+  get officeNumber() {return this._telephoneNumber.number;}
+}
+
+class TelephoneNumber {
+  get areaCode() {return this._areaCode;}
+  get number() {return this._number;}
+}
+```
+
+``` js
+class Person {
+  get officeAreaCode() {return this._officeAreaCode;}
+  get officeNumber() {return this._officeNumber;}
+}
+```
+
+### 배경
+
+- 클래스 추출하기를 거꾸로 돌리는 리팩터링
+  - 역할을 옮기는 리팩터링을 한 뒤, 특정 클래스에 남은 역할이 거의 없을 때 자주 사용
+- 두 클래스의 기능을 지금과 다르게 배분하고 싶을 때도 인라인 (코드 재구성)
+  - 클래스를 인라인 해서 하나로 합친 다음 새로운 클래스를 추출하는 게 간단할 수도 있기 때문
+
+
+
+### 절차
+
+- 각 단계마다 테스트 필수
+
+1. 소스 클래스의 각 public 메서드에 대응하는 메서드들을 타깃 클래스에 생성
+   - 해당 메서드들은 단순히 작업을 소스 클래스로 위임해야 함
+2. 소스 클래스의 메서드를 사용하는 코드를 모두 타깃 클래스의 위임 메서드를 사용하도록 변경
+3. 소스 클래스의 메서드와 필드를 모두 타깃 클래스로 이동
+4. 소스 클래스를 삭제
+
+
+
+### 예시
+
+- 배송 추적 정보를 표현하는 `TrackingInformation` 클래스
+
+``` js
+class TrackingInformation {
+  get shippingCompany() {
+    return this._shippingCompany; //배송 회사
+  }
+  
+  set shippingCompany(arg) {
+    this._shippingCompany = arg;
+  }
+  
+  get trackingNumber() {
+    return this._trackingNumber; // 추적 번호
+  }
+  
+  set trackingNumber(arg) {
+    this._trackingNumber = arg;
+  }
+  
+  get display(){
+    return `${this.shippingCompany} : ${this.trackingNumber}`;
+  }
+}
+```
+
+- 이는 배송(`shipment`) 클래스의 일부처럼 사용됨
+
+``` js
+get trackingInfo() {
+  return this._trackingInformation.display;
+}
+
+get trackingInformation() {
+  return this._trackingInformation;
+}
+
+set trackingInformation(aTrackingInformation){
+  this._trackingInformation = aTrackingInformation;
+}
+```
+
+- `TrackingInformation` 이 현재 제 역할을 못하고 있어 Shipment 클래스로 인라인
+- `TrackingInformation` 의 메서드를 호출하는 코드 찾기
+
+``` js
+aShipment.trackingInformation.shippingCompany = request.vendor;
+```
+
+- 외부에서 직접 호출하는 `TrackingInformation`의 메서드들을 모조리 Shipment로 옮기기
+  - 기존 함수 옮기기(8.1)과는 다르게 `Shipment` 에 위임함수를 만들고 클라이언트가 이를 호출하도록 수정
+
+
+``` js
+// Shipment 클래스
+set shippingCompany(arg) {
+  this._trackingInformation.shippingCompany = arg;
+}
+
+// 클라이언트
+aShipment.shippingCompany = request.vendor;
+```
+
+- 클라이언트에서  `TrackingInformation`의 모든 요소를 이런 식으로 처리하고 모두 고쳤다면 ` TrackingInformation`의 모든 요소를  `Shipment`로 옮김
+- `display()` 메서드를 인라인
+
+``` js
+// Shipment 클래스
+get trackingInfo() {
+  return `${this.shippingCompany} : ${this.trackingNumber}`;
+}
+```
+
+- 배송 회사 필드 인라인
+
+``` js
+// Shipment 클래스
+get shippingCompany() {
+  return this._shippingCompany;
+}
+
+set shippingCompany(arg) {
+  this._shippingCompany = arg;
+}
+```
+
+- 이동할 목적지인 Shipment 에서  shippingCompany()만 참조하므로 필드 옮기기의 절차를 모두 수행하지 않아도 됨
+- 이 과정을 반복하고, 다 옮겼다면 `TrackingInformation` 클래스를 삭제
+
+``` js
+// Shipment 클래스
+get trackingInfo(){
+  return `${this.shippingCompany} : ${this.trackingNumber}`;
+}
+
+get shippingCompany()  {return this._shippingCompany;}
+set shippingCompany(arg) {this._shippingCompany = arg;}
+get trackingNumber() {return this._trackingNumber;}
+set trackingNumber(arg) {this._trackingNumber = arg;}
+```
+
+
+
+
 
 ## 7.7 위임 숨기기
 
-<br>
+```js
+manager = aPerson.department.manager;
+```
+
+``` js
+manager = aPerson.manager;
+
+class Person {
+  get manager() {
+    return this.department.manager;
+  }
+}
+```
+
+### 배경
+
+- 모듈화 설계를 제대로 하는 핵심
+  - 캡슐화가 되어 있다면 변경시에 함께 고려할 모듈 수가 적어져서 코드를 변경하기가 훨씬 쉬워짐
+- 캡슐화는 필드를 숨기는 것보다 많은 역할이 있음
+  - 서버 객체의 필드가 가리키는 객체(위임 객체)의 메서드를 호출하려면 클라이언트는 이 위임 객체를 알아야 함
+  - 위임 객체의 인터페이스가 바뀌면 이 인터페이스를 사용하는 모든 클라이언트가 코드를 수정해야함
+  - 서버 자체에 위임 메서드를 만들어서 위임 객체의 존재를 숨겨서 의존성을 없앨 수 있어 위임 객체가 수정되더라도 서버 코드만 고치면 되고 클라이언트는 아무런 영향을 받지 않음
+
+
+
+### 절차
+
+1. 위임 객체의 각 메서드에 해당하는 위임 메서드를 서버에 생성
+2. 클라이언트가 위임 객체 대신 서버를 호출하도록 수정하고 테스트
+3. 모두 수정했다면, 서버로부터 위임 객체를 얻는 접근자 제거
+4. 테스트
+
+
+
+### 예시
+
+- 사람(`Person`)과 사람이 속한 부서(`department`)를 다음처럼 정의
+
+``` js
+// Person 클래스
+constructor(name){
+  this._name = name;
+}
+get name() {return this._name;}
+get department() {return this._department;}
+set department(arg) {this._department=arg;}
+
+// Department 클래스
+get chargeCode() {return this._chargeCode;}
+set chargeCode(arg) {return._chargeCode = arg;}
+get manager() {return this._manager;}
+set manager(arg) {this._manager = arg;}
+```
+
+- 클라이언트에서 어떤 사람이 속한 부서의 관리자를 알고 싶으면, 부서 객체부터 얻어와야 함
+
+``` js
+// 클라이언트
+manager = aPerson.department.manager;
+```
+
+- 클라이언트는 부서 클래스의 작동 방식 (클래스가 관리자 정보를 제공한다는 사실)을 알아야 함
+- 이러한 의존성을 줄이려면 클라이언트가 부서 클래스를 볼 수 없게 숨기고, 대신 사람 클래스에 간단한 위임 메서드를 만들면 됨
+
+``` js
+// Person 클래스
+get manager() {return this._department.manager;}
+```
+
+- 모든 클라이언트가 이 메서드를 사용하도록 고침
+
+``` js
+// 클라이언트
+manager = aPerson.manager;
+```
+
+- 클라이언트 코드를 다 고쳤다면 사람 클래스 department() 접근자를 삭제
+
+
 
 ## 7.8 중개자 제거하기
 
-<br>
+``` js
+manager = aPerson.manager;
+
+class Person {
+  get manager() {
+    return this.department.manager;
+  }
+}
+```
+
+``` js
+manager = aPerson.department.manager;
+```
+
+### 배경
+
+- 클라이언트가 위임 객체의 또 다른 기능을 사용하고 싶을 때마다 서버에 위임 메서드를 추가해야하는데 기능을 추가하다보면 단순히 전달만 하는 메서드가 복잡해짐
+- 서버 클래스는 그저 중개자 역할이 되어 클라이언트가 위임 객체를 직접 호출 하는 게 나을 수 있음
+
+
+
+### 절차
+
+1. 위임 객체를 얻는 게터를 만들기
+2. 위임 메서드를 호출하는 클라이언트가 모두 이 게터를 거치도록 수정하고 테스트
+3. 모두 수정했다면 위임 메서드를 삭제
+   - 자동 리팩터링 도구를 사용할 때는 위임 필드를 캡슐화한 다음, 이를 사용하는 모든 메서드를 인라인
+
+
+
+## 예시
+
+- 자신이 속한 부서 객체를 통해 관리자를 찾는 사람 클래스
+
+``` js
+// 클라이언트
+manager = aPerson.manager;
+
+// Person 클래스
+get manager() {return this._department.manager;}
+
+// Department 클래스
+get manager() {
+  return this._manager;
+}
+```
+
+- 사용하기 쉽고 부서는 캡슐화되어 있지만, 이런 위임 메서드가 많아지면 사람 클래스의 상당 부분이 그저 위임하는 데만 쓰일 것이라 **중개자를 제거**하는 편이 나음
+- 먼저 위임 객체(부서)를 얻는 게터 생성
+
+``` js
+// Person 클래스
+get department() {return this._department;}
+```
+
+- 각 클라이언트가 부서 객체를 직접 사용하도록 수정
+
+``` js
+manager = aPerson.department.manager;
+```
+
+- 클라이언트를 모두 고쳤다면 `Person`의 `manager()` 메서드를 삭제. `Person`에 단순한 위임 메서드가 더는 남지 않을때 까지 이 작업을 반복
+
+
 
 ## 7.9 알고리즘 교체하기
 
+``` js
+function foundPerson(people){
+  for(let i = 0; i < people.length; i++){
+    if(people[i] === "Don"){
+      return "Don";
+    }
+    if (people[i] === "John"){
+      return "John";
+    }
+    if (people[i] === "Knet"){
+      return "Knet";
+    }
+  }
+  return "";
+}
+```
+
+``` js
+function foundPerson(people){
+  const candidates = ["Don", "John", "Knet"];
+  return people.find(p => candidates.include(p)) || '';
+}
+```
+
+- 교체 작업 전 반드시 메서드를 가능한 한 잘게 나눴는지 확인 (알고리즘을 간소화하는 작업부터 시작해야 쉬워짐)
+
+
+
+### 절차
+
+1. 교체할 코드를 함수 하나에 모은다.
+2. 이 함수를 이용해 동작을 검증하는 테스트 마련
+3. 대체할 알고리즘 준비
+4. 정적 검사 수행
+5. 기존 알고리즘과 새 알고리즘의 결과를 비교하는 테스트 수행. 두 결과가 같다면 리팩터링 종료. 그렇지 않다면 기존 알고리즘을 참고해서 새 알고리즘을 테스트하고 디버깅
