@@ -750,3 +750,455 @@ appliesToMass = states.inclueds("MA")
     - 기존 함수의 코드를 수정하더라도, 인라인 코드의 동작은 바뀌지 않아야 할 때뿐
 - 특히, 라이브러리가 제공하는 함수로 대체할 수 있다면 더 좋음
 
+<br>
+
+## 8.6 문장 슬라이드하기
+
+```js
+const pricingPlan = retrievePricingPlan();
+const order = retrieveOrder();
+let charge;
+const chargePerUnit = pricingPlan.unit;
+```
+
+```js
+const pricingPlan = retrievePricingPlan();
+const chargePerUnit = pricingPlan.unit;
+const order = retrieveOrder();
+let charge;
+```
+
+### 배경
+
+- <u>관련된 코드들을 가깝게 모으면</u> 이해하기 더 쉽고, 다른 리팩터링(주로 **6.1 함수 추출하기**)의 준비 단계로 자주 행해짐
+- **변수 선언**의 경우 함수 첫머리에 모두 모아두기 보다, <u>처음 사용하는 곳에 선언</u>하여 모아두는 것도 좋음
+
+### 절차
+
+1. 코드 조각(문장들)을 이동할 목표 위치를 찾기. 코드 조각의 원래 위치와 목표 위치 사이의 코드들을 훑어보면서, 조각을 모으고 나면 동작이 달라지는 코드가 있는지 살피기. 다음과 같은 간섭이 있다면 이 리팩터링을 포기
+   → 코드 조각에서 참조하는 요소를 선언하는 문장 앞으로는 이동할 수 없음
+   → 코드 조각을 참조하는 요소의 뒤로는 이동할 수 없음
+   → 코드 조각에서 참조하는 요소를 수정하는 문장을 건너뛰어 이동할 수 없음
+   → 코드 조각이 수정하는 요소를 참조하는 요소를 건너뛰어 이동할 수 없음
+2. 코드 조각을 원래 위치에서 잘라내어 목표 위치에 붙여 넣기
+
+### 예시
+
+```js
+1 const pricingPlan = retrievePricingPlan();
+2 const order = retrieveOrder();
+3 const baseCharge = pricingPlan.base;
+4 let charge;
+5 const chargePerUnit = pricingPlan.unit;
+6 const units = order.units;
+7 let discount;
+8 charge = baseCharge + units * chargePerUnit;
+9 let discountableUnits = Math.max(units - pricingPlan.discountThreshold, 0);
+10 discount = discountableUnits * pricingPlan.discountFactor;
+11 if (order.isRepeat) discount += 20;
+12 charge = charge - discount;
+13 chargeOrder(charge);
+```
+
+- <u>부수효과가 **없는** 코드</u>끼리는 마음 가는대로 재배치 가능 (단, **명령-질의 원칙**을 지켜가며 코딩했다는 전제 하에 2번 줄이 부수효과가 없다고 판단할 수 있음)
+- <u>부수효과가 **있는** 코드</u>를 슬라이드하거나 건너뛰어야 한다면 훨씬 신중해야 함
+  - **11번 줄(if (order.isRepeat) ...)**의 경우 **12번 줄(charge = charge - discount;)** 때문에 뒤로 이동할 수 없음
+  - **13번 줄(chargeOrder(charge);)** 또한 **12번 줄** 앞으로 이동할 수 없음
+  - **8번 줄(charge = baseCharge + ...)**은 **9~11번** 줄을 건너뛸 수 있음 (공통된 상태를 수정하는 일이 전혀 없기 때문)
+  - 상태를 갱신하는 코드들 자체를 최대한 제거하는 것이 좋음
+- 슬라이드 후 테스트를 통해 깨지는 것이 없는지 파악하고, 테스트가 실패했을 경우 좋은 대처는 <u>더 작게 슬라이드</u> 해보는 것
+
+### 예시 : 조건문이 있을 때의 슬라이드
+
+- <u>조건문 밖으로</u> 슬라이드할 때는 중복 로직이 제거되고, <u>조건문 안으로</u> 슬라이드할 때는 반대로 중복 로직이 추가됨
+
+```js
+let result;
+if (availableResources.length === 0) {
+    result = createResource();
+    allocatedResources.push(result); // 중복 로직
+} else {
+    result = availableResources.pop();
+    allocatedResources.push(result); // 중복 로직
+}
+return result;
+```
+
+- 중복된 문장들을 <u>조건문 밖으로</u> 슬라이드하면 한 문장으로 합쳐짐 (반대의 상황이면 로직이 복제되어 중복이 생김)
+
+```js
+let result;
+if (availableResources.length === 0) {
+    result = createResource();
+} else {
+    result = availableResources.pop();
+}
+allocatedResources.push(result); // 조건문 밖으로 슬라이드
+return result;
+```
+
+#### 더 읽을거리
+
+- **문장 교환하기(Swap Statement)** 라는 이름의 거의 똑같은 리팩터링도 있음
+  - 인접한 코드 조각을 이동하지만, 문장 하나짜리 조각만 취급 (이동할 조각과 건너뛸 조각 모두 **단일 문장**으로 구성된 문장 슬라이드)
+
+<br>
+
+## 8.7 반복문 쪼개기
+
+```js
+let averageAge = 0;
+let totalSalary = 0;
+for (const p of people) {
+    averageAge += p.age;
+    totalSalary += p.salary;
+}
+averageAge = averageAge / people.length;
+```
+
+```js
+let totalSalary = 0;
+for (const p of people) {
+    totalSalary += p.salary;
+}
+
+let averageAge = 0;
+for (const p of people) {
+    averageAge += p.age;
+}
+averageAge = averageAge / people.length;
+```
+
+### 배경
+
+- 반복문 하나에서 <u>두 가지 일을 수행</u>하는 경우가 많은데, 이 경우 반복문을 수정해야 할 때마다 두 가지 일 모두를 잘 이해하고 진행해야 함
+- 반대로 각각의 반복문으로 분리해두면 <u>수정할 동작 하나</u>만 이해하면 됨
+  - 한 가지 값만 계산하는 반복문이라면 그 값만 곧바로 반환할 수 있음
+- 반복문을 두 번 실행해야 하므로 **최적화**와 거리가 멀 수 있지만, **리팩터링**과의 구분이 필요
+  - 병목이 생기는 경우 추후에 합치기는 매우 쉽고, 다른 <u>더 강력한 최적화</u>를 적용할 수 있는 길을 열어주기도 함
+
+### 절차
+
+1. 반복문을 복제해 두 개로 만들기
+2. 반복문이 중복되어 생기는 부수효과를 파악해서 제거
+3. 각 반복문을 **함수로 추출(6.1)**할지 고민해보기
+
+### 예시
+
+> 전체 급여와 가장 어린 나이를 계산하는 코드
+
+```js
+let youngest = people[0] ? people[0].age : Infinity;
+let totalSalary = 0;
+for (const p of people) {
+    if (p.age < youngest) youngest = p.age;
+    totalSalary += p.salary;
+}
+
+return `최연소: ${youngest}, 총 급여: ${totalSalary}`;
+```
+
+- 반복문 쪼개기의 첫 단계로 **1.** 단순히 반복문 복제
+
+```js
+let youngest = people[0] ? people[0].age : Infinity;
+let totalSalary = 0;
+for (const p of people) {
+    if (p.age < youngest) youngest = p.age;
+    totalSalary += p.salary;
+}
+// 반복문 복제
+for (const p of people) {
+    if (p.age < youngest) youngest = p.age;
+    totalSalary += p.salary;
+}
+
+return `최연소: ${youngest}, 총 급여: ${totalSalary}`;
+```
+
+- 잘못된 결과를 초래할 수 있는 중복 제거 (부수효과가 없는 코드라면 그대로 둬도 괜찮음)
+
+```js
+let youngest = people[0] ? people[0].age : Infinity;
+let totalSalary = 0;
+for (const p of people) {
+    // if (p.age < youngest) youngest = p.age; // 부수효과가 있는 코드는 한쪽만 남기고 제거
+    totalSalary += p.salary;
+}
+// 반복문 복제
+for (const p of people) {
+    if (p.age < youngest) youngest = p.age;
+    // totalSalary += p.salary; // 부수효과가 있는 코드는 한쪽만 남기고 제거
+}
+
+return `최연소: ${youngest}, 총 급여: ${totalSalary}`;
+```
+
+#### 더 가다듬기
+
+- 이 리팩터링을 할 때는 나뉜 각 반복문을 각각의 함수로 추출하면 어떨지까지 고민하기
+  - 지금의 경우에서는 **문장 슬라이드하기(8.6)**부터 적용
+
+```js
+let totalSalary = 0;
+for (const p of people) {
+    totalSalary += p.salary;
+}
+let youngest = people[0] ? people[0].age : Infinity; // 문장 슬라이드
+for (const p of people) {
+    if (p.age < youngest) youngest = p.age;
+}
+
+return `최연소: ${youngest}, 총 급여: ${totalSalary}`;
+```
+
+- 각 반복문을 **함수로 추출(6.1)**
+
+```js
+return `최연소: ${youngestAge()}, 총 급여: ${totalSalary()}`;
+
+function totalSalary() {
+    let totalSalary = 0;
+    for (const p of people) {
+        totalSalary += p.salary;
+    }
+    return totalSalary;
+}
+
+function youngestAge() {
+    let youngest = people[0] ? people[0].age : Infinity;
+    for (const p of people) {
+        if (p.age < youngest) youngest = p.age;
+    }
+    return youngest;
+}
+```
+
+- 총 급여 계산 함수(`totalSalary()`)의 코드는 반복문을 **파이프라인으로 바꾸기(8.8)** 적용
+- 최연소 계산 코드(`youngestAge()`)에는 **알고리즘 교체하기(7.9)** 적용
+
+```js
+return `최연소: ${youngestAge()}, 총 급여: ${totalSalary()}`;
+
+function totalSalary() {
+    return people.reduce((total, p) => total + p.salary, 0); // 파이프라인으로 바꾸기
+}
+
+function youngestAge() {
+    return Math.min(...people.map(p => p.age)); // 알고리즘 교체하기
+}
+```
+
+<br>
+
+## 8.8 반복문을 파이프라인으로 바꾸기
+
+```js
+const names = [];
+for (const i of input) {
+    if (i.job === "programmer") {
+        names.push(i.name);
+    }
+}
+```
+
+```js
+const names = input.filter(i => i.job === "programmer").map(i => i.name);
+```
+
+### 배경
+
+- **컬렉션 파이프라인**을 이용하면 **순회**와 같은 처리 과정을 <u>일련의 연산</u>으로 표현할 수 있음 (각 연산은 컬렉션을 입력받아 다른 컬렉션을 내뱉음)
+- 대표적인 연산은 `map` 과 `filter` 이며, 논리를 파이프라인으로 표현하면 이해하기 훨씬 쉬워짐
+
+### 절차
+
+1. 반복문에서 사용하는 컬렉션을 가리키는 변수를 하나 만들기
+   → 기존 변수를 단순히 복사한 것일 수도 있음
+2. 반복문의 첫 줄부터 시작해서, 각각의 단위 행위를 적절한 컬렉션 파이프라인 연산으로 대체. 이때 컬렉션 파이프라인 연산은 1. 에서 만든 반복문 컬렉션 변수에서 시작하여, 이전 연산의 결과를 기초로 연쇄적으로 수행됨
+3. 반복문의 모든 동작을 대체했다면 반복문 자체를 지우기
+   → 반복문이 결과를 누적 변수에 대입했다면 파이프라인의 결과를 그 누적 변수에 대입
+
+### 예시
+
+> 회사의 지점 사무실 정보를 CSV 형태로 정리한 것
+
+```js
+office, country, telephone
+Chicago, USA, +1 312 373 1000
+Beijing, China, +86 4008 900 505
+Bangalore, India, +91 80 4064 9570
+Porto Alegre, Brazil, +55 51 3079 3550
+Chennai, India, +91 44 660 44766
+
+... (더 많은 데이터)
+```
+
+- 다음 함수는 인도에 자리한 사무실을 찾아서 도시명과 전화번호를 반환
+
+```js
+function acquireData(input) {
+    const lines = input.split("\n"); // 컬렉션
+    let firstLine = true;
+    const result = [];
+    for (const line of lines) { // 반복문
+        if (firstLine) {
+            firstLine = false;
+            continue;
+        }
+        if (line.trim() === "") continue;
+        const record = line.split(",");
+        if (record[1].trim() === "India") {
+            result.push({city: record[0].trim(), phone: record[2].trim()});
+        }
+    }
+    return result;
+}
+```
+
+- 우선 **1.** 반복문에서 사용하는 컬렉션을 가리키는 별도 변수(루프 변수)를 새로 만들기
+- 코드의 반복문에서 첫 if문은 CSV 데이터의 첫 줄을 건너뛰는 역할로, `silce()` 연산을 루프 변수에서 수행하고 반복문의 if문 제거
+  - 제어용 변수인 `firstLine` 도 제거
+
+```js
+function acquireData(input) {
+    const lines = input.split("\n");
+    // let firstLine = true; // 제어용 변수 제거
+    const result = [];
+    const loopItems = lines.slice(1); // 루프 변수 만들기, slice() 연산 적용
+    for (const line of loopItems) {
+        // slice() 연산으로 대체
+        // if (firstLine) {
+        //     firstLine = false;
+        //     continue;
+        // }
+        if (line.trim() === "") continue;
+        const record = line.split(",");
+        if (record[1].trim() === "India") {
+            result.push({city: record[0].trim(), phone: record[2].trim()});
+        }
+    }
+    return result;
+}
+```
+
+- 빈 줄 지우기(`trim`)는 `filter()` 연산으로 대체
+
+```js
+function acquireData(input) {
+    const lines = input.split("\n");
+    const result = [];
+    const loopItems = lines.slice(1).filter(line => line.trim() !== ""); // 빈 줄 지우기에 filter() 연산 적용
+    for (const line of loopItems) {
+        // if (line.trim() === "") continue; // filter() 연산으로 대체
+        const record = line.split(",");
+        if (record[1].trim() === "India") {
+            result.push({city: record[0].trim(), phone: record[2].trim()});
+        }
+    }
+    return result;
+}
+```
+
+- `map()` 연산을 사용해 여러 줄짜리 CSV 데이터를 문자열 배열로 변환 (`record` 라는 변수 이름은 나중에 수정)
+- `filter()` 연산으로 인도에 위치한 사무실 레코드 추출
+
+```js
+function acquireData(input) {
+    const lines = input.split("\n");
+    const result = [];
+    const loopItems = lines
+    	  .slice(1)
+    	  .filter(line => line.trim() !== "")
+    	  .map(line => line.split(",")) // 문자열 배열 변환에 map() 연산 적용
+    	  .filter(record => record[1].trim() === "India") // 인도에 위치한 사무실 filter()
+    	  ; // 파이프라인의 문장 종료 세미콜론(;)을 별도 줄에 적어주면 편함
+    for (const line of loopItems) {
+        const record = line; // split(",") 연산 map() 연산으로 대체
+        // if (record[1].trim() === "India") { // if문 filter() 연산으로 대체
+            result.push({city: record[0].trim(), phone: record[2].trim()});
+        // }
+    }
+    return result;
+}
+```
+
+- `map()` 을 사용해 결과 레코드를 생성
+
+```js
+function acquireData(input) {
+    const lines = input.split("\n");
+    const result = [];
+    const loopItems = lines
+    	  .slice(1)
+    	  .filter(line => line.trim() !== "")
+    	  .map(line => line.split(","))
+    	  .filter(record => record[1].trim() === "India")
+    	  .map(record => ({city: record[0].trim(), phone: record[2].trim()})) // 결과 레코드 생성
+    	  ;
+    for (const line of loopItems) {
+        const record = line;
+        result.push(line); // 결과 레코드 생성하는 로직 map() 으로 대체 
+    }
+    return result;
+}
+```
+
+- 파이프라인의 결과를 누적 변수에 대입하고, 반복문 코드 삭제
+
+```js
+function acquireData(input) {
+    const lines = input.split("\n");
+    const result = [];
+    const result = lines // 누적 변수에 대입
+    	  .slice(1)
+    	  .filter(line => line.trim() !== "")
+    	  .map(line => line.split(","))
+    	  .filter(record => record[1].trim() === "India")
+    	  .map(record => ({city: record[0].trim(), phone: record[2].trim()}))
+    	  ;
+    return result;
+}
+```
+
+#### 더 가다듬기
+
+- `result` 변수를 인라인하고, 람다 변수 중 일부의 이름을 바꾸기 (레이아웃 정돈 적용도 가능)
+
+```js
+function acquireData(input) {
+    const lines = input.split("\n");
+    return lines
+    	  .slice  (1)
+    	  .filter (line   => line.trim() !== "")
+    	  .map    (line   => line.split(","))
+    	  .filter (fields => fields[1].trim() === "India")
+    	  .map    (fields => ({city: fields[0].trim(), phone: fields[2].trim()}))
+    	  ;
+}
+```
+
+<br>
+
+## 8.9 죽은 코드 제거하기
+
+```js
+if (false) {
+    doSomethingThatUsedToMatter();
+}
+```
+
+```js
+
+```
+
+### 배경
+
+- **쓰이지 않는 코드**의 동작을 이해하고, 코드를 수정 했는데도 기대한 결과가 나오지 않는 이유를 파악하기 위해 <u>시간을 허비</u>하는 경우가 많음
+- 코드가 더 이상 사용되지 않게 되었다면 지우고, 혹시 다시 필요해지더라도 **버전 관리 시스템**을 통해 살려낼 수 있음
+  - 버전 관리 시스템이 보편화되지 않았을 때는 **주석 처리**하는 방법을 사용했으나, 현재는 더 이상 필요하지 않음
+
+### 절차
+
+1. 죽은 코드를 외부에서 참조할 수 있는 경우라면(예컨데 함수 하나가 통째로 죽었을 때) 혹시라도 호출하는 곳이 있는지 확인
+2. 없다면 죽은 코드를 제거
