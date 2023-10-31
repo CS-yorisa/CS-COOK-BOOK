@@ -508,6 +508,10 @@ let customer = customerRepository.get(customerData.id);
 
 ### 배경
 
+- 같은 데이터를 물리적으로 복제해 사용할 때 가장 크게 문제되는 상황은 그 데이터를 갱신해야 할 때이며, 이런 상황이라면 복제된 데이터를 모두 참조로 바꿔주는 것이 좋음
+- 값을 참조로 바꾸면 엔티티 하나당 객체도 단 하나만 존재하게 되는데, 이런 객체들을 모아두고 클라이언트들의 접근을 관리하는 저장소가 필요해짐
+- 각 엔티티를 표현하는 객체를 한 번만 만들고, 객체가 필요한 곳에서는 모두 이 저장소로부터 얻어 쓰는 방식이 됨
+
 ### 절차
 
 1. 같은 부류에 속하는 객체들을 보관할 저장소 만들기 (이미 있다면 생략)
@@ -516,7 +520,74 @@ let customer = customerRepository.get(customerData.id);
 
 ### 예시
 
-<br>
+- 주문(Order) 클래스는 주문 데이터를 생성자에서 JSON 문서로 입력받아 필드를 채움
+- 이 과정에서 주문 데이터에 포함된 고객 ID를 사용해 고객(customer) 객체를 생성
+
+``` js
+// Order 클래스
+constructor(data){
+  this._number = data.number;
+  this._customer = new Customer(data.customer); // data.customer가 고객 ID
+  // 다른 데이터를 읽어 들인다
+}
+
+get customer() {return this._customer;}
+```
+
+``` js
+// Customer 클래스
+constructor(id) {
+  this._id = id;
+}
+
+get id() {return this._id;}
+```
+
+- 이 방식으로 생성한 고객 객체는 값이며, 고객 ID가 123인 주문을 다섯 개 생성한다면 독립된 고객 객체가 5개 만들어지며 이 중 하나를 수정하더라도 나머지 네 개에는 반영되지 않음
+- 같은 엔티티를 표현하는 객체가 여러 개 만들어지는 상황에서 이 객체가 불변이 아니라면 일관성이 깨질 수 있음
+
+1. 항상 물리적으로 똑같은 고객 객체를 사용하고 싶다면, 유일한 객체를 저장해둘 곳이 필요함
+
+``` js
+let _repositoryData;
+
+export function initialize() {
+  _repositoryData = {};
+  _repositoryData.customer = new Map();
+}
+
+export function registerCustomer(id) {
+  if (! _repositoryData.customers.has(id))
+    _repositoryData.customers.set(id, new Customer(id));
+  return findCustomer(id);
+}
+
+export function findCustomer(id) {
+  return _repositoryData.customers.get(id);
+}
+```
+
+- 이 저장소는 고객 객체를 ID와 함께 등록할 수 있으며, ID 하나당 오직 하나의 고객 객체만 생성됨을 보장함
+
+2. 주문의 생성자에서 올바른 고객 객체를 얻어오는 방법 강구 (예시에서는 고객 ID가 입력 데이터 스트림으로 전달되어 해결 가능)
+3. 수정
+
+``` js
+// Order 클래스
+constructor(data) {
+  this._number = data.number;
+  this._customer = registerCustomer(data.customer);
+  // 다른 데이터를 읽어 들인다.
+}
+
+get customer() {return this._customer;}
+```
+
+- 이제 특정 주문과 관련된 고객 정보를 갱신하면 같은 고객을 공유하는 주문 모두에서 갱신된 데이터를 사용
+- 고객 목록을 미리 다 만들어서 저장소에 저장해놓고, 주문 정보를 읽을 때 연결해주는 방법도 자주 사용하나 저장소에 없는 고객 ID를 사용하는 주문에서 오류 발생
+- 이 예시 코드는 생성자 본문이 전역 저장소와 결합된다는 문제가 있으며, 저장소를 생성자 매개변수로 전달하도록 수정할 수 있음 (의존성 주입 중 생성자 주입)
+
+
 
 ## 9.6 매직 리터럴 바꾸기
 
@@ -534,6 +605,13 @@ function potentialEnergy(mass, height) {
 ```
 
 ### 배경
+
+- 매직 리터럴(magic literal)이란 소스 코드에 등장하는 일반적인 리터럴 값을 말함
+- 상수를 정의하고 숫자 대신 상수를 사용하도록 변경
+- 상수가 특별한 비교로직에 쓰이는 경우에는 함수 호출로 바꾸는 방법도 있음
+- 의미 전달면에서 값을 바로 쓰는 게 나은 경우나, 리터럴이 함수 하나에서만 쓰이고 그 함수가 맥락 정보를 충분히 제공할 경우는 사용하지 않음
+
+
 
 ### 방법
 
