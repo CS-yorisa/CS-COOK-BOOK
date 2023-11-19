@@ -857,3 +857,629 @@ get voyageAndHistoryLengthFactor(){
 ```
 
 - 추가로 And로 네이밍된 두 가지 일을 하는 메서드를 분리하고 다른 리팩터링 기법을 적용하여 간소화할 수 있음
+
+
+## 10.5 특이 케이스 추가하기
+
+```js
+// before
+if (aCustomer === "미확인 고객") customerName = "거주자"
+
+// after
+class UnknownCusotmer {
+    get name() {return "거주자"}
+}
+```
+
+### 배경
+
+- 데이터 구조의 특정 값을 확인한 후 동작을 수행하는 코드가 곳곳에 있는 경우, 중복 코드의 흔한 케이스 중 하나
+    - 똑같은 코드가 곳곳에 있으면 한 데로 모으는 게 효율적
+- 특수한 경우의 공통 동작 요소를 모아서 사용하는 특이 케이스 패턴
+    - 단순히 데이터를 읽기만 하면, 반환할 값들을 담은 리터를 객체 형태로 준비하면 됨
+    - 그 이상의 동작을 수행해야 하면, 필요한 메서드를 담은 객체를 생성하면 됨
+    - 특이 케이스 객체는 캡슐화한 클래스를 반환하도록 해도 되고, 변환을 거쳐 데이터 구조에 추가시키는 형태도 가능
+- null은 특이 케이스로 처리해야할 때가 많음
+
+### 절차
+
+1. 컨테이너에 특이 케이스인지를 검사하는 속성 추가, false 반환하게 함
+2. 특이 케이스 객체 만듬
+   특이 케이스인지를 검사하는 속성만 포함, ture를 반환하게 함
+3. 클라이언트에서 특이 케이스인지를 검사 코드로 함수를 추출(6.1)
+4. 코드에 새로운 특이 케이스 대상 추가, 함수의 반환 값으로 받거나 변환 함수 적용
+5. 특이 케이스를 검사하는 함수 본문을 수정, 특이 케이스 객체의 솔성을 사용하도록 함
+6. 테스트
+7. 여러 함수를 클래스로 묶기(6.9) 또는 함수를 변환 함수로 묶기(6.10) 적용
+8. 특이 케이스 검사 함수를 이용하는 곳이 남아 있다면 검사 함수 인라인(6.2)
+
+### 예시
+
+```js
+class Site {
+    get customer() {return this._customer}
+}
+```
+
+- 전력 회사는 전력이 필요한 현장에 인프라를 설치해 서비스 제공
+
+```js
+class Customer {
+    get name() {...} // 고객 이름
+    get billingPlan() {...} // 요금제
+    get billingPlan(arg) {...}
+    get paymentHistory() {...} // 납부 이력
+}
+```
+
+- 고객 클래스는 많은 속성이 있지만, 위의 속성만 고려
+- 일반적으로 현장에는 고객이 거주하지만, 항상 그렇지는 않음
+    - 누군가 이사를 나가거나, 이사를 들어오는 경우
+    - 이럴 때 레코드의 고객 필드를 “미확인 고객” 문자열로 채움
+- 위의 상황을 고려하여, 클라이언트 코드는 알려지지 않은 고객의 경우에도 처리할 수 있어야 함
+
+```js
+// 클라이언트 1
+const aCustomer = site.customer
+// ...
+let customerName
+if (aCusotmer === "미확인 고객") customerName = "거주자"
+else customerName = aCusotmer.name
+
+// 클라이언트 2
+const plan = (aCusotmer === "미확인 고객")
+    ? registry.billingPlans.basic
+    : aCusotmer.billingPlan
+
+// 클라이언트 3
+if (aCustomer !== "미확인 고객") aCustomer.billingPlan = newPlane
+
+// 클라이언트 4
+const weeksDeliquent = (aCusotmer === "미확인 고객")
+    ? 0
+    : aCusotmer.paymentHistory.weeksDelinquentInLastYear
+```
+
+- 알려지지 않은 고객일때 이루어지는 코드들
+    - 미확인 고객인 경우, 고객 이름을 거주자로, 기본 요금제를 청구, 연체 기간을 0주로 분류
+
+```js
+class Cusotmer {
+    get isUnknown() {return false}
+}
+
+class UnknownCusotmer {
+    get isUnknown() {return true}
+}
+```
+
+- 1️⃣ 먼저 미확인 고객인지를 나타내는 메서드를 고객 클래스에 추가
+- 2️⃣ 미확인 고객 전용 클래스 생성
+
+```js
+function isUnknown(arg) {
+    if ( !( (arg instanceof Customer) || (arg == "미확인 고객") ) )
+        throw new Error(`잘못된 값과 비교: <${arg}>`)
+    return (arg === "미확인 고객")
+}
+```
+
+- 3️⃣ 미확인 고객을 기대하는 곳 모두에 특이 케이스 객체를 반환하도록 하고,
+  값이 “미확인 고객”인지를 검사하는 모든 곳에 새로운 `isunknown()`메서드를 사용하도록 수정
+- Customer 클래스를 수정하여 “미확인 고객” 대신 UnknownCustomer 객체를 반환하게 한다면,
+  “미확인 고객”인지르 확인하는 코드 모두를 `isUnknown()` 호출로 바꾸는 작업을 한 번에 해야만 함
+    - → 매력적이지 않은 코드
+- 그러한 경우, 코드를 별도 함수로 추출(6.1), 한 곳으로 모아서 특이 케이스인지 확인할 수 있음
+
+```js
+// 클라이언트 1
+let customerName
+if (isUnknown(aCustomer)) customerName = "거주자"
+else customerName = aCustomer.name
+
+// 클라이언트 2
+const plan = (isUnknown(aCustoemr))
+    ? registry.billingPlans.basic
+    : aCusotmer.billingPlan
+
+// 클라이언트 3
+if (!isUnknown(aCusotmer)) aCustomer.billingPlan = newPlane
+
+// 클라이언트 4
+const weeksDeliquent = (isUnknown(aCusotmer))
+    ? 0
+    : aCusotmer.paymentHistory.weeksDelinquentInLastYear
+```
+
+- `isUnknown()` 함수를 이용해 미확인 고객인지를 확인가능하므로, 이를 클라이언트 코드에 적용
+
+```js
+// Site 클래스
+getCusotmer() {
+    return (this._customer === "미확인 고객")
+        ? new UnknownCustomer()
+        : this._customer
+}
+```
+
+- 4️⃣ 특이 케이스일 때, Site 클래스가 UnknownCusotmer 객체를 반환하도록 수정
+
+```js
+function isUnknown(arg) {
+    if ( !( (arg instanceof Customer) || arg instanceof UnknownCustomer ) )
+        throw new Error(`잘못된 값과 비교: <${arg}>`)
+    return arg.isUnknown
+}
+```
+
+- 5️⃣ `isUnknown()`함수를 수정, “미확인 고객”만 반환하는 방식의 코드는 사라짐
+- 6️⃣ 테스트
+
+```js
+// UnknownCustomer 클래스
+get name() {return "거주자"}
+// 클라이언트 1
+const customerName = aCustomer.name
+
+// UnknownCustomer 클래스
+get billingPlan() {return registry.billingPlans.basic}
+set billingPlan() { /* 무시 */}
+
+// UnknownCustomer 클래스
+get paymentHistory() {reutnr new NullPaymentHistory()}
+// NullPaymentHistory 클래스
+get weeksDeliquentInLastYear() {return 0}
+```
+
+- 7️⃣ 각 클라이언트에서 수행하는 특이 케이스 검사를 일반적인 기본값으로 대체할 수 있다면,
+  이 검사 코드에 여러 함수를 클래스로 묶기(6.9) 적용 가능
+    - 클라이언트 1의 경우는 조건문을 제거할 수 있음, 그리고 변수 인라인(6.4) 적용 가능
+    - 클라이언트 2, 3에서의 요금제 속성은 일반적인 기본값을 반환하는 형태이므로, 게터로 만들 수 있음
+    - 클라이언트 4는 자신만의 속성을 갖는 또 다른 객체(지불 이력)을 반환해야 됨,
+        - 특이 케이스 객체가 다른 객체를 반환해야 한다면, 그 객체 역시 특이 케이스 인 것이 일반적
+        - 이를 위해 NullPaymentHistory 생성
+
+```js
+// before
+const name = !isUnknown(aCustomer) ? aCusotmer.name: "미확인 거주자"
+
+// after
+const name = aCustomer.isUnknown ? "미확인 거주자" : aCusotmer.name
+```
+
+- 8️⃣ 모든 클라인트 코드를 이 다형적 행위(타입에 따라 동작이 달라짐)를 적요할 수 있는지 살펴봄
+    - 특이 케이스로부터 다른 것을 원하는 독특한 클라이언트가 있을 수 있음
+    - 이러한 경우 기존의 값을 똑같이 반환할 수 있되, 함수 인라인(6.2)를 적용할 수 있음
+
+### 예시: 객체 리터럴 이용하기
+
+```js
+class Site {
+    get customer() {return this._customer}
+}
+
+class Customer {
+    get name() {...}
+    get billingPlan() {...}
+    get billingPlan(arg) {...}
+    get paymentHistory() {...}
+}
+
+// 클라이언트 1
+const aCustomer = site.customer
+// ...
+let customerName
+if (aCustomer === "미확인 고객") customerName = "거주자"
+else customerName = aCusotmer.name
+
+// 클라이언트 2
+const plan = (aCustomer === "미확인 고객")
+    ? registry.billingPlans.basic
+    : aCustomer.billingPlan
+
+// 클라이언트 3
+const weeksDeliquent = (aCusotmer === "미확인 고객")
+    ? 0
+    : aCusotmer.paymentHistory.weeksDelinquentInLastYear
+```
+
+- 고객 정보를 갱신하는 클라이언트가 없는 경우
+
+```js
+function createUnknownCustomer() {
+    return {
+        isUnknown: true
+    }
+}
+
+class Customer {
+    get isUnknown() {return false}
+}
+```
+
+- 1️⃣ 고객에 `isUnknown()` 속성 추가,
+- 2️⃣ 이 필드를 포함하는 특이 케이스 객체를 생성, 이전과의 차이점은 리터럴이라는 점
+
+```js
+function isUnknown(arg) {
+    return (arg === "미확인 고객")
+}
+
+// 클라이언트 1
+let customerName
+if (isUnknown(aCustomer)) customerName = "거주자"
+else customerName = aCusotmer.name
+
+// 클라이언트 2
+const plan = isUnknown(aCustomer)
+    ? registry.billingPlans.basic
+    : aCustomer.billingPlan
+
+// 클라이언트 3
+const weeksDeliquent = (isUnknown(aCusotmer))
+    ? 0
+    : aCusotmer.paymentHistory.weeksDelinquentInLastYear
+```
+
+- 3️⃣ 특이 케이스 조건 검사 부분을 함수로 추출(6.1)
+
+```js
+function isUnknown(arg) {
+    return arg.isUnknown
+}
+
+class Site {
+    get customer() {
+        return (this._customer === "미확인 고객")
+            ? createUnknownCusotmer()
+            : this._customer
+    }
+}
+```
+
+- 4️⃣ 조건을 검사하는 코드와 Site클래스에서 이 특이 케이스를 사용하도록 수정
+
+```js
+// 클라이언트 1
+function createUnknownCustomer() {
+    return {
+        isUnknown: true,
+        name: "거주자"
+    }
+}
+
+const customerName = aCusotmer.name
+
+// 클라이언트 2
+function createUnknownCustomer() {
+    return {
+        isUnknown: true,
+        name: "거주자",
+        billingPlan: registry.billingPlans.basic
+    }
+}
+
+const plan = aCustomer.billingPlan
+
+// 클라이언트 3
+function createUnknownCustomer() {
+    return {
+        isUnknown: true,
+        name: "거주자",
+        billingPlan: registry.billingPlans.basic,
+        paymentHistory: {
+            weeksDelinquentInLastYear: 0
+        }
+    }
+}
+
+const weekDeliquent = aCustomer.paymentHistory.weeksDelinquentInLastYear
+```
+
+- 7️⃣ 각각의 표준 응답을 적절한 리터럴 값으로 대체
+
+### 예시: 변환 함수 이용하기
+
+- 위의 두 예시는 클래스와 관련있지만, 변환 단계를 추가하면 같은 아이디어를 레코드에도 적용 가능
+
+```json
+{
+    name: "애크미 보스턴",
+    location: "Malden MA",
+    // 더 많은 현장 정보
+    customer: {
+        name: "애크미 산업",
+        billingPlan: "plan-451",
+        paymentHistory: {
+            weeksDeliquentInLastYear: 7
+            // ...
+        },
+        // ...
+    }
+}
+
+{
+    name: "물류창고 15",
+    location: "Malden MA",
+    customer: "미확인 고객",
+}
+```
+
+- 일반적인 JSON 데이터 구조를 가지고, 위와 같이 “미확인 고객”이 있는 경우
+
+```js
+// 클라이언트 1
+const site = acquireSiteDate()
+const aCustomer = site.customer
+// ...
+let customerName
+if (aCustoemr === "미확인 고객") customerName = "거주자"
+else customerName = aCustomer.name
+
+// 클라이언트 2
+const plane = (aCustomer === "미확인 고객")
+    ? registry.billingPlan.basic
+    : aCustomer.billingPlan
+
+// 클라이언트 3
+const weeksDeliquent = (aCusotmer === "미확인 고객")
+    ? 0
+    : aCusotmer.paymentHistory.weeksDelinquentInLastYear
+```
+
+- 앞선 예시와 같이 미확인 고객인지 확인하는 클라이언트 코드들
+
+```js
+function enrichSite(inputSite) {
+    return _.cloneDeep(inputSite)
+}
+
+// 클라이언트 1
+const rawSite = acquireSiteDate()
+const site = enrichSite(rawSite)
+const aCustomer = site.customer
+// ...
+let customerName
+if (aCustoemr === "미확인 고객") customerName = "거주자"
+else customerName = aCustomer.name
+```
+
+- 우선 `enrichSite()`함수를 통과시켜 깊은 복사 수행
+
+```js
+function isUnknown(aCustomer) {
+    return (aCustomer === "미확인 고객")
+}
+
+// 클라이언트 1
+const rawSite = acquireSiteDate()
+const site = enrichSite(rawSite)
+const aCustomer = site.customer
+// ...
+let customerName
+if isUnknown(aCustoemr) customerName = "거주자"
+else customerName = aCustomer.name
+
+// 클라이언트 2
+const plane = isUnknown(aCustomer)
+    ? registry.billingPlan.basic
+    : aCustomer.billingPlan
+
+// 클라이언트 3
+const weeksDeliquent = isUnknown(aCusotmerisUnknown)
+    ? 0
+    : aCusotmer.paymentHistory.weeksDelinquentInLastYear
+```
+
+- 3️⃣ 알려지지 않은 고객인지 검사하는 로직을 함수로 추출(6.1)
+
+```js
+function enrichSite(aSite) {
+    const result = _.cloneDeep(aSite)
+    const unknownCusotmer = {
+        isUnknown: true
+    }
+
+    if isUnknown(aCustoemr) result.customer = unknownCusotmer
+    else result.customer.isUnknown = false
+    reutnr result
+}
+```
+
+- 1️⃣, 2️⃣ 고객 레코드에 `isUnknown()`속성을 추가하여 현장 정보 보강
+
+```js
+function isUnknown(aCustomer) {
+    if (aCustomer === "미확인 고객") return true
+    else return aCustomer.isUnknown
+}
+```
+
+- 5️⃣ 특이 케이스 검사 시 새로운 속성을 이용하도록 수정
+- 6️⃣ 모든 기능이 잘 동작하는지 테스트
+- 7️⃣ 특이 케이스에 여러 함수를 변환 함수로 묶기 적용(6.10)
+
+## 10.6 어서션 추가하기
+
+```js
+// before
+if (this.discountRate)
+    base = base - (this.discountRate * base)
+
+// after
+assert(this.discountRate >= 0)
+if (this.discountRate)
+    base = base - (this.discountRate * base)
+```
+
+### 배경
+
+- 특정 조건이 참일 때만 동작하는 코드 영역이 있을 수 있음
+    - 이런 코드는 명시적으로 기술되어 있지 않은 경우가 있어서 스스로 알아내야 하는데,
+    - 어서션을 이용할 수 있음
+- 어서션은 항상 참이라 가정하는 조건부 문장
+    - 어서션 실패는 프로그래머가 잘못했다는 뜻
+    - 어서션 실패는 시스템의 다른 부분에서는 절대 검사하지 않아야 하며, 프로그램 기능의 정상동작에 아무런 영향을 주지 않도록 작성
+- 어서션을 오류 찾기에 활용하라고 추천하는 경우
+    - 어서션은 실행되는 과정이 어떠한 환경을 가정했는지 알려주는 도구
+
+### 절차
+
+- 참이라고 가정하는 조건이 보이면 그 조건을 명시하는 어서션 추가
+
+### 예시
+
+```js
+// before
+class Customer {
+    applyDiscount(aNumber) {
+        return (this.discountRate)
+            ? aNumber - (this.discountRate * aNumber)
+            : aNumber
+    }
+}
+
+// after
+class Customer {
+    applyDiscount(aNumber) {
+        if (!this.discountRate) return aNumber
+        else {
+            assert (this.discountRate >= 0)
+            return aNumber - (this.discountRate * aNumber)
+        }
+    }
+}
+```
+
+- 할인과 관련한 코드, 상품 구입시 할인율 적용 받음
+    - 할인율은 항상 양수라는 가정이 깔려 있음
+    - 3항 연산자 대신 if-then 구조로 만들고, 어서션 추가 가능
+
+```js
+class Customer {
+    set discountRate(aNumber) {
+        assert (null === aNuber || aNumber >= 0)
+        this._discountRate = aNumber
+    }
+}
+```
+
+- 이 예시의 경우 세터 메서트에 추가하여
+    - `applyDiscount()`적용 하기 이전부터 발생할 수 있는 문제를 발견하는 게 더 좋을 수 있음
+
+## 10.7 제어 플래그로 탈출문 바꾸기
+
+```js
+// before
+for (const p of people) {
+    if (!found) {
+        if (p === "조커") {
+            sendAlert()
+            found = true
+        }
+    }
+}
+
+// after
+for (const p or people) {
+    if (p === "조커") {
+        sendAlert()
+        break
+    }
+}
+```
+
+### 배경
+
+- 제어 플래그는 코드의 동작을 변경하는데 사용되는 변수, 어딘가에서 값을 계산해 다른 어딘가의 조건문으로 검사하는데 사용
+- 제어 플래그의 주 서식지는 반복문 안
+    - break, continue를 활용하거나, 함수 return을 활용할 수 있음
+
+### 절차
+
+- 1️⃣ 제어 플래그를 사용하는 코드를 함수로 추출(6.1)할지 고려
+- 2️⃣ 제어 플래그를 갱신하는 코드 각각을 적절한 제어문으로 변경 (return, break, continue)
+- 3️⃣ 제어 플래그 제거
+
+### 예시
+
+```js
+let found = false
+for (const p of people) {
+    if (!found) {
+        if (p === "조커") {
+            sendAlert()
+            found = true
+        }
+        if (p === "사루만") {
+            sendAlert()
+            found = true
+        }
+    }
+}
+```
+
+- 사람 목록을 훑으며 악당을 찾는 코드
+
+```js
+// ...
+checkForMiscreants(people)
+// ...
+
+function checkForMiscreants(people) {
+    let found = false
+    for (const p of people) {
+        if (!found) {
+            if (p === "조커") {
+                sendAlert()
+                found = true
+            }
+            if (p === "사루만") {
+                sendAlert()
+                found = true
+            }
+        }
+    }
+}
+```
+
+- 1️⃣ 함수 추출하기(6.1)
+
+```js
+function checkForMiscreants(people) {
+    let found = false
+    for (const p of people) {
+        if (!found) {
+            if (p === "조커") {
+                sendAlert()
+                return
+            }
+            if (p === "사루만") {
+                sendAlert()
+                return
+            }
+        }
+    }
+}
+```
+
+- 2️⃣ 제어 플래그 대신 return 사용,
+    - 함수가 아니거나 상황에 따라 break를 사용할 수 있음
+
+```js
+function checkForMiscreants(people) {
+    for (const p of people) {
+        if (p === "조커") {
+            sendAlert()
+            return
+        }
+        if (p === "사루만") {
+            sendAlert()
+            return
+        }
+    }
+}
+```
+
+- 3️⃣ 제어 플래그와 관련한 코드 제거
+    - 추가로 여러 악당중 하나를 찾는 코드를 파이프로 간략화 할 수 있음
