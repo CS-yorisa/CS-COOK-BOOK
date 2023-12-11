@@ -221,7 +221,7 @@ class Department extends Party {
 - 문장 슬라이드하기(8.6)을 적용하여 super() 호출 아래로 다른 코드들을 이동
 - 슈퍼클래스 생성자로 코등를 옮긴 후, 슈퍼클래스 생성자에 매개변수로 건내도록 변경
 
-### 예시: 곧통 코드가 나중에 올 때
+### 예시: 공통 코드가 나중에 올 때
 
 ```js
 class Employee{
@@ -796,7 +796,7 @@ class Employee extends Party {
 - 5️⃣ 원래 클래스들을 사용하는 코드를 검토하여 슈퍼클래스의 인터페이르를 사용하게 할지 고민
 
 
-##3 예시
+### 예시
 
 ```js
 class Employee {
@@ -882,7 +882,7 @@ constructor(name, staff) {
 - 3️⃣ 필드 올리기(12.2), 2️⃣메서드 올리기(12.1) 적용
 
 ```js
-// Department class
+// Party class
 get totalAnnualCost() {
     return this.monthlyCost * 12
 }
@@ -929,7 +929,7 @@ class Employee {...}
 ```js
 // before
 class Order {
-    get daysToHsip() {
+    get daysToShip() {
         return this._warehouse.dayToShip
     }
 }
@@ -942,7 +942,7 @@ class PriorityOrder extends Order {
 
 // after
 class Order {
-    get daysToHsip() {
+    get daysToShip() {
         return (this._priorityDelegate)
             ? this._priorityDelegate.daysToShip
             : this._warehoue.daysToShip
@@ -960,7 +960,7 @@ class PriorityOrderDelegate {
 ### 배경
 
 - 속한 갈래에 따라 동작이 달라지는 객체들은 상속으로 표현하는게 자연스러움
-    - 공통 데이터와 동작을 모두 슈퍼클래스에 두고, 서브브클래스는 자신에 맞게 기능을 추가하거나, 오버라이드 하면 됨
+    - 공통 데이터와 동작을 모두 슈퍼클래스에 두고, 서브클래스는 자신에 맞게 기능을 추가하거나, 오버라이드 하면 됨
 - 상속의 단점이 있음, 한 번만 쓸 수 있는 카드
     - 무언가 달라져야 하는 이유가 여러 개여도 상속에서는 그중 단 하나의 이유만 선택해 기준으로 삼을 수밖에 없음
     - 예를 들어, 사람 객체 동작을 ‘나이대’ 혹은 ‘소득 수준’에 따라 다르게 하고 싶다면, 서브 클래스는 젊은이와 어르신, 혹은 부자와 서민이 되어야지, 둘 다 될수는 없음
@@ -1035,7 +1035,7 @@ get basePrice() {
 }
 ```
 
-- 프리미언 예약은 슈퍼클래스를 상속해 많은걸 변경
+- 프리미엄 예약은 슈퍼클래스를 상속해 많은걸 변경
     - 공연 후 관객과의 대화 시간이나, 요금을 결정하는 부분이 일반 예약과 프리미엄 예약이 다름
 - 위의 예시는 상속이 잘 들어맞음
 - 위의 예시에서 서브클래스에서 위임으로 바꾸려 하는 이유
@@ -1074,7 +1074,7 @@ aBooking = createPremiumBooking(show, date, extras)
 ```js
 // PremiumBookingDelegate class
 constructor (hostBooking, extras) {
-    this._host = hosBooking
+    this._host = hostBooking
     this._extras = extras
 }
 ```
@@ -1095,7 +1095,7 @@ function createPremiumBooking(show, date, extras) {
     return result
 }
 
-// Bookin class
+// Booking class
 _bePremium(extras) {
     this._premiumDelegate = new PremiumBookingDelegate(this, extras)
 }
